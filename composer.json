@@ -18,8 +18,7 @@
         "hyqo/measure": "^0.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^8.5",
-        "ext-xdebug": "*"
+        "phpunit/phpunit": "^8.5"
     },
     "autoload": {
         "psr-4": {
