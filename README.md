@@ -1,10 +1,10 @@
-# package-skeleton 
-![Packagist Version](https://img.shields.io/packagist/v/hyqo/?style=flat-square)
-![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/hyqo/?style=flat-square)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/hyqo//run-tests?style=flat-square)
+# router
+![Packagist Version](https://img.shields.io/packagist/v/hyqo/router?style=flat-square)
+![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/hyqo/router?style=flat-square)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/hyqo/router/run-tests?style=flat-square)
 
 ## Install
 
 ```sh
-composer require hyqo/
+composer require hyqo/router
 ```

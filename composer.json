@@ -1,5 +1,5 @@
 {
-    "name": "hyqo/",
+    "name": "hyqo/router",
     "description": "",
     "keywords": [
     ],
@@ -11,19 +11,27 @@
         }
     ],
     "require": {
-        "php": ">=8.0"
+        "php": ">=7.2 <8.1",
+        "ext-json": "*",
+        "hyqo/http": "^0.6",
+        "hyqo/container": "^1.0",
+        "hyqo/measure": "^0.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.0"
+        "phpunit/phpunit": "^8.5",
+        "ext-xdebug": "*"
     },
     "autoload": {
         "psr-4": {
-            "Hyqo\\": "src"
-        }
+            "Hyqo\\Router\\": "src"
+        },
+        "files": [
+            "src/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
-            "Hyqo\\\\Test\\": "tests"
+            "Hyqo\\Router\\Test\\": "tests"
         }
     }
 }
