@@ -5,9 +5,7 @@ namespace Hyqo\Router;
 use Hyqo\Container\Container;
 use Hyqo\Http\Request;
 use Hyqo\Http\Response;
-use Hyqo\Router\Response\Resolvable\Resolvable;
-use Hyqo\Router\Response\Resolvable\ResolvableResponse;
-use Hyqo\Router\Response\Resolver\ResolverInterface;
+use Hyqo\Router\Interceptor\InterceptorInterface;
 
 class Pipeline
 {
@@ -40,6 +38,20 @@ class Pipeline
         return $this;
     }
 
+    protected function wrappedCall(Request $request, \Closure $fn): Response
+    {
+        try {
+            $response = $fn();
+        } catch (InterceptorInterface $interceptor) {
+            $response = $this->wrappedCall($request, function () use ($interceptor, $request) {
+                $handler = $interceptor->getHandler();
+                return $this->container->call($handler, ['router' => $this->router, 'request' => $request]);
+            });
+        }
+
+        return $response ?? new Response();
+    }
+
     public function __invoke(Request $request): Response
     {
         if ($this->queue->isEmpty()) {
@@ -48,25 +60,8 @@ class Pipeline
 
         $middleware = $this->queue->dequeue();
 
-        if (!$response = $middleware($request, $this)) {
-            return new Response();
-        }
-
-        if ($response instanceof ResolvableResponse) {
-            $resolvable = $response;
-            /** @var ResolverInterface $resolver */
-            $resolver = $this->container->make($resolvable->getResolverClassname());
-
-            $answer = $response->getAnswer();
-
-            if ($answer instanceof Resolvable) {
-                $route = $this->router->getRoute($answer->getName());
-                return $resolver->handleRoute($resolvable->getAttributes(), $route);
-            }
-
-            return $resolver->handleAnswer($resolvable->getAttributes(), $answer);
-        }
-
-        return $response;
+        return $this->wrappedCall($request, function () use ($middleware, $request) {
+            return $middleware($request, $this);
+        });
     }
 }

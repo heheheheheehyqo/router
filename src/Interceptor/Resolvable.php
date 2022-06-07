@@ -1,6 +1,6 @@
 <?php
 
-namespace Hyqo\Router\Response\Resolvable;
+namespace Hyqo\Router\Interceptor;
 
 class Resolvable
 {

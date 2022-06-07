@@ -9,7 +9,6 @@ use Hyqo\Http\Request;
 use Hyqo\Http\Response;
 use Hyqo\Router\Exception\NotFoundException;
 use Hyqo\Router\Mapper\Mapper;
-use Hyqo\Router\Response\RedirectResponse;
 use Hyqo\Router\Route\Route;
 use Hyqo\Router\Service\CallableService;
 
@@ -55,7 +54,7 @@ class Router
     {
         $pathInfo = $request->getPathInfo();
 
-        if ($pathInfo !== $sanitizedPathInfo = preg_replace(['#/{2,}#', '#/+$#'], ['/', ''], $pathInfo)) {
+        if ($pathInfo !== $sanitizedPathInfo = preg_replace(['#/{2,}#', '#(?<!^)/+$#'], ['/', ''], $pathInfo)) {
             return (new Response(HttpCode::MOVED_PERMANENTLY()))
                 ->setHeader(Header::LOCATION, $sanitizedPathInfo);
         }
@@ -92,7 +91,7 @@ class Router
 
     public function buildPipeline(Route $route): Pipeline
     {
-        $pipeline = $this->container->make(Pipeline::class, ['router' => $this]);
+        $pipeline = new Pipeline($this->container, $this);
 
         foreach ($route->getMiddlewares() as $middlewareClassname) {
             $pipeline->pipe($this->container->make($middlewareClassname));

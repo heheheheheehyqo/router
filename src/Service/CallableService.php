@@ -80,4 +80,12 @@ class CallableService
             'The controller must be callable'
         );
     }
+
+    /**
+     * @codeCoverageIgnore
+     */
+    public function call(callable $callable, array $arguments = [])
+    {
+        return $this->container->call($callable, $arguments);
+    }
 }
