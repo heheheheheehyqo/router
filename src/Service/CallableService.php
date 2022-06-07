@@ -59,7 +59,7 @@ class CallableService
                 $object = $this->container->make($class);
 
                 if (is_callable($object)) {
-                    return $object;
+                    return [$object, '__invoke'];
                 }
 
                 throw new NotCallableException(
