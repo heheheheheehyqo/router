@@ -63,7 +63,9 @@ class RouterConfiguration implements MappableInterface
         }
 
         if ($this->fallback) {
-            throw (new NotFoundException())->setController($this->fallback);
+            throw (new NotFoundException())
+                ->setController($this->fallback)
+                ->setMiddlewares($this->middlewares);
         }
 
         return null;

@@ -61,15 +61,15 @@ class Router
 
         try {
             if ($route = $this->match($request)) {
-                $pipeline = $this->buildPipeline($route);
+                $pipeline = $this->buildRoutePipeline($route);
 
                 return $pipeline($request) ?? new Response();
             }
         } catch (NotFoundException $e) {
             if (null !== $fallback = $e->getController()) {
-                $callable = $this->callableService->makeCallable($fallback);
+                $pipeline = $this->buildPipeline($e->getMiddlewares(), $fallback);
 
-                return $this->container->call($callable) ?? new Response(HttpCode::NOT_FOUND());
+                return $pipeline($request) ?? new Response();
             }
         }
 
@@ -89,21 +89,21 @@ class Router
         throw new \RuntimeException(sprintf('Cannot find route "%s"', $name));
     }
 
-    public function buildPipeline(Route $route): Pipeline
+    public function buildPipeline(array $middlewares, $controller, $fallback = null): Pipeline
     {
         $pipeline = new Pipeline($this->container, $this);
 
-        foreach ($route->getMiddlewares() as $middlewareClassname) {
+        foreach ($middlewares as $middlewareClassname) {
             $pipeline->pipe($this->container->make($middlewareClassname));
         }
 
-        $callable = $this->callableService->makeCallable($route->getController());
+        $callable = $this->callableService->makeCallable($controller);
 
-        $pipeline->pipe(function () use ($callable, $route) {
+        $pipeline->pipe(function () use ($callable, $fallback) {
             try {
                 return $this->container->call($callable);
             } catch (NotFoundException $e) {
-                if (null !== $fallback = $route->getFallback()) {
+                if (null !== $fallback) {
                     $e->setController($fallback);
                 }
 
@@ -112,5 +112,10 @@ class Router
         });
 
         return $pipeline;
+    }
+
+    public function buildRoutePipeline(Route $route): Pipeline
+    {
+        return $this->buildPipeline($route->getMiddlewares(), $route->getController(), $route->getFallback());
     }
 }
