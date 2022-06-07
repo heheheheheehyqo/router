@@ -18,7 +18,7 @@ class RouteConfiguration implements MappableInterface
     /** @var string */
     protected $path;
 
-    /** @var string|array|Closure */
+    /** @var string|array|\Closure */
     protected $controller;
 
     /** @var array */
@@ -32,7 +32,7 @@ class RouteConfiguration implements MappableInterface
     }
 
     /**
-     * @param string|array|Closure $controller
+     * @param string|array|\Closure $controller
      */
     public function setController($controller): self
     {

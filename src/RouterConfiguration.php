@@ -19,9 +19,15 @@ class RouterConfiguration implements MappableInterface
     /** @var string|array|\Closure */
     protected $fallback = null;
 
-    public function add(string $name, string $path): RouteConfiguration
+    /**
+     * @param string $name
+     * @param string $path
+     * @param string|array|\Closure $controller
+     * @return RouteConfiguration
+     */
+    public function add(string $name, string $path, $controller = null): RouteConfiguration
     {
-        return $this->routes[] = new RouteConfiguration($name, $path);
+        return $this->routes[] = new RouteConfiguration($name, $path, $controller);
     }
 
     public function addGroup(?string $name = null): GroupConfiguration
