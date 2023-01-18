@@ -3,7 +3,6 @@
 namespace Hyqo\Router\Test;
 
 use Hyqo\Container\Container;
-use Hyqo\Http\Method;
 use Hyqo\Http\Request;
 use Hyqo\Router\MiddlewareInterface;
 use Hyqo\Router\Pipeline;
@@ -26,7 +25,7 @@ class PipelineTest extends TestCase
 
     public function test_middleware()
     {
-        $request = Request::create(Method::POST(), '/');
+        $request = new Request();
         $pipeline = $this->createPipeline();
 
         $pipeline->pipe(function (Request $request, Pipeline $next) {
@@ -46,7 +45,7 @@ class PipelineTest extends TestCase
         $response = $pipeline($request);
 
         $this->assertEquals(['m1' => '', 'm2' => '', 'm3' => ''], $request->attributes->all());
-        $this->assertEquals(['HTTP/1.0 200 OK', 'X: v'], iterator_to_array($response->headers->each()));
+        $this->assertEquals(['HTTP/1.0 200 OK', 'X: v'], $response->headers->all());
     }
 }
 
