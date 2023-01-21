@@ -6,6 +6,6 @@ use Hyqo\Router\Route\Route;
 
 interface MappableInterface
 {
-    /** @return \Generator|Route[] */
+    /** @return \Generator<array-key,Route> */
     public function mapGenerator(): \Generator;
 }

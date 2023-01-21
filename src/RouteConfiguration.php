@@ -3,57 +3,41 @@
 namespace Hyqo\Router;
 
 use Hyqo\Http\Request;
-use Hyqo\Router\Mapper\MappableInterface;
 use Hyqo\Router\Route\Route;
 
 /** @internal */
-class RouteConfiguration implements MappableInterface
+class RouteConfiguration implements MatchableInterface
 {
-    use Traits\FilterTrait;
-    use Traits\MiddlewareTrait;
+    use Matcher\MatcherTrait;
+    use Middleware\MiddlewareTrait;
 
-    /** @var string */
-    protected $name;
+    protected array $attributes = [];
 
-    /** @var string */
-    protected $path;
-
-    /** @var string|array|\Closure */
-    protected $controller;
-
-    /** @var array */
-    protected $attributes = [];
-
-    public function __construct(string $name, string $path, $controller = null)
-    {
-        $this->name = $name;
-        $this->path = $path;
-        $this->controller = $controller;
+    public function __construct(
+        protected string $name,
+        protected string $path,
+        protected string|array|\Closure|null $controller = null,
+    ) {
     }
 
-    /**
-     * @param string|array|\Closure $controller
-     */
-    public function setController($controller): self
+    public function setController(string|array|\Closure $controller): static
     {
         $this->controller = $controller;
 
         return $this;
     }
 
-    public function match(Request $request, string $base): ?Route
+    public function __invoke(Request $request, string $base): ?Route
     {
-        if (!$this->isMethodMatch($request)) {
+        if (!$this->matchMethodAndHost($request)) {
             return null;
         }
 
-        if (!$this->isHostMatch($request)) {
-            return null;
-        }
-
-//        echo sprintf("check %s %s for %s\n", $this->name, $base . $this->path, $request->getPathInfo());
-
-        if (null !== $match = $this->buildMatcher('(?P<pathInfo>'.$base . $this->path.')/?')->full($request->getPathInfo())) {
+        if (
+            null !== $match = $this
+                ->buildMatcher('(?P<pathInfo>' . $base . $this->path . ')/?')
+                ->full($request->getPathInfo())
+        ) {
             return new Route(
                 $this->name,
                 $match->matches['pathInfo'],
@@ -68,8 +52,10 @@ class RouteConfiguration implements MappableInterface
         return null;
     }
 
-    /** @inheritdoc */
-    public function mapGenerator(): \Generator
+    /**
+     * @return \Generator<string,Route>
+     */
+    public function getIterator(): \Generator
     {
         yield new Route(
             $this->name,

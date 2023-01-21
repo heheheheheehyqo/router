@@ -1,11 +1,11 @@
 <?php
 
-namespace Hyqo\Router\Traits;
+namespace Hyqo\Router\Middleware;
 
 trait MiddlewareTrait
 {
     /** @var string[] */
-    protected $middlewares = [];
+    protected array $middlewares = [];
 
     public function addMiddleware(string $middleware): self
     {
@@ -17,9 +17,7 @@ trait MiddlewareTrait
     /** @param string[] $middlewares */
     public function addMiddlewares(string ...$middlewares): self
     {
-        foreach ($middlewares as $middleware) {
-            $this->middlewares[] = $middleware;
-        }
+        $this->middlewares = [...$this->middlewares, ...$middlewares];
 
         return $this;
     }

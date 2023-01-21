@@ -4,30 +4,14 @@ namespace Hyqo\Router\Route;
 
 class Token
 {
-    /**
-     * @var string
-     */
-    private $name;
+    protected bool $optional = false;
 
-    /**
-     * @var string
-     */
-    private $requirement;
+    protected float|int|string|null $default = null;
 
-    /**
-     * @var bool
-     */
-    private $optional = false;
-
-    /**
-     * @var float|int|string|null
-     */
-    private $default = null;
-
-    public function __construct(string $name, string $requirement)
-    {
-        $this->name = $name;
-        $this->requirement = $requirement;
+    public function __construct(
+        protected string $name,
+        protected string $requirement,
+    ) {
     }
 
     public function getName(): string
@@ -40,15 +24,12 @@ class Token
         return $this->requirement;
     }
 
-    /**
-     * @return float|int|string|null
-     */
-    public function getDefault()
+    public function getDefault(): float|int|string|null
     {
         return $this->default;
     }
 
-    public function setOptional($default): self
+    public function setOptional(float|int|string|null $default): self
     {
         $this->optional = true;
         $this->default = $default;

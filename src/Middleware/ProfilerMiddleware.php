@@ -3,10 +3,11 @@
 namespace Hyqo\Router\Middleware;
 
 use Hyqo\Measure\Measure;
+use Hyqo\Router\MiddlewareInterface;
 use Hyqo\Router\Pipeline;
 use Hyqo\Http\{Request, Response};
 
-class ProfilerMiddleware implements \Hyqo\Router\MiddlewareInterface
+class ProfilerMiddleware implements MiddlewareInterface
 {
     public function __invoke(Request $request, Pipeline $next): Response
     {

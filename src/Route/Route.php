@@ -2,49 +2,23 @@
 
 namespace Hyqo\Router\Route;
 
+use Hyqo\Router\Exception\UndefinedControllerException;
+
 class Route
 {
-    /** @var string */
-    protected $name;
-
-    /** @var string */
-    protected $pattern;
-
-    /** @var string */
-    protected $pathInfo;
-
-    /** @var Token[] */
-    protected $tokens = [];
-
-    /** @var array */
-    protected $attributes = [];
-
-    /** @var array */
-    protected $middlewares = [];
-
-    /** @var string|array|Closure */
-    protected $controller;
-
-    /** @var string|array|Closure */
-    protected $fallback;
-
     public function __construct(
-        string $name,
-        string $pathInfo,
-        string $pattern,
-        array $tokens,
-        array $attributes,
-        $middlewares,
-        $controller
+        protected string $name,
+        protected string $pathInfo,
+        protected string $pattern,
+        protected array $tokens,
+        protected array $attributes,
+        protected array $middlewares,
+        protected string|array|\Closure|null $controller,
+        protected string|array|\Closure|null $fallback = null,
     ) {
-        $this->name = $name;
-        $this->pathInfo = $pathInfo;
-        $this->pattern = $pattern;
-        $this->tokens = $tokens;
-        $this->attributes = $attributes;
-        $this->middlewares = $middlewares;
-        $this->controller = $controller;
-        $this->fallback = null;
+        if (null === $this->controller) {
+            throw new UndefinedControllerException("Undefined controller for route '$this->name'");
+        }
     }
 
     public function getName(): string
@@ -80,68 +54,50 @@ class Route
         return $this->middlewares;
     }
 
-    /**
-     * @return string|array|Closure
-     */
-    public function getController()
+    public function getController(): string|array|\Closure
     {
         return $this->controller;
     }
 
-    /**
-     * @return string|array|Closure
-     */
-    public function getFallback()
+    public function getFallback(): string|array|\Closure|null
     {
         return $this->fallback;
     }
 
-    public function withMiddlewares(array $middlewares): self
+    public function addMiddlewares(array $middlewares): static
     {
         if (!count($middlewares)) {
             return $this;
         }
 
-        foreach ($this->middlewares as $middleware) {
-            $middlewares[] = $middleware;
-        }
-
-        $this->middlewares = $middlewares;
+        $this->middlewares = [...$middlewares, ...$this->middlewares];
 
         return $this;
     }
 
-    public function withTokens(array $tokens): self
+    public function addTokens(array $tokens): static
     {
         if (!count($tokens)) {
             return $this;
         }
 
-        foreach ($this->tokens as $name => $value) {
-            $tokens[$name] = $value;
-        }
-
-        $this->tokens = $tokens;
+        $this->tokens = [...$tokens, ...$this->tokens];
 
         return $this;
     }
 
-    public function withAttributes(array $attributes): self
+    public function addAttributes(array $attributes): static
     {
         if (!count($attributes)) {
             return $this;
         }
 
-        foreach ($this->attributes as $name => $value) {
-            $attributes[$name] = $value;
-        }
-
-        $this->attributes = $attributes;
+        $this->attributes = [...$attributes, ...$this->attributes];
 
         return $this;
     }
 
-    public function withPatternPrefix(?string $pattern): self
+    public function addPatternPrefix(?string $pattern): static
     {
         if (null === $pattern) {
             return $this;
@@ -152,7 +108,7 @@ class Route
         return $this;
     }
 
-    public function withNamePrefix(?string $name): self
+    public function addNamePrefix(?string $name): static
     {
         if (null === $name) {
             return $this;
@@ -163,10 +119,7 @@ class Route
         return $this;
     }
 
-    /**
-     * @param string|array|Closure $fallback
-     */
-    public function withFallback($fallback): self
+    public function addFallback(string|array|\Closure|null $fallback): static
     {
         if (null === $fallback || null !== $this->fallback) {
             return $this;

@@ -2,7 +2,7 @@
 
 namespace Hyqo\Router\Exception;
 
-class UrlBuilderException extends \RuntimeException
+class UrlBuilderException extends RouterException
 {
 
 }

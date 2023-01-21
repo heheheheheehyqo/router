@@ -9,20 +9,11 @@ use Hyqo\Router\Interceptor\InterceptorInterface;
 
 class Pipeline
 {
-    /**
-     * @var \SplQueue
-     */
-    protected $queue;
+    protected \SplQueue $queue;
 
-    /**
-     * @var Container
-     */
-    private $container;
+    private Container $container;
 
-    /**
-     * @var Router
-     */
-    private $router;
+    private Router $router;
 
     public function __construct(Container $container, Router $router)
     {
@@ -49,7 +40,7 @@ class Pipeline
             });
         }
 
-        return $response ?? new Response();
+        return wrap_to_response($response);
     }
 
     public function __invoke(Request $request): Response

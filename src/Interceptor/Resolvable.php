@@ -4,14 +4,10 @@ namespace Hyqo\Router\Interceptor;
 
 class Resolvable
 {
-    protected $name;
-
-    protected $attributes;
-
-    public function __construct(string $name, array $attributes)
-    {
-        $this->name = $name;
-        $this->attributes = $attributes;
+    public function __construct(
+        protected string $name,
+        protected array $attributes,
+    ) {
     }
 
     public function getName(): string

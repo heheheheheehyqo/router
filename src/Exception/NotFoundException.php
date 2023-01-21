@@ -2,33 +2,25 @@
 
 namespace Hyqo\Router\Exception;
 
-class NotFoundException extends \RuntimeException
+class NotFoundException extends RouterException
 {
-    /** @var string|array|\Closure */
-    protected $controller;
+    protected string|array|\Closure|null $controller = null;
 
-    /** @var string[] */
-    protected $middlewares = [];
+    protected array $middlewares = [];
 
-    /**
-     * @param string|array|\Closure $controller
-     */
-    public function setController($controller): self
+    public function setController(string|array|\Closure $controller): self
     {
         $this->controller = $controller;
 
         return $this;
     }
 
-    /**
-     * @return string|array|\Closure
-     */
-    public function getController()
+    public function getController():string|array|\Closure|null
     {
         return $this->controller;
     }
 
-    public function setMiddlewares(array $middlewares): self
+    public function setMiddlewares(array $middlewares): static
     {
         $this->middlewares = $middlewares;
 

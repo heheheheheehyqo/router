@@ -4,13 +4,12 @@ namespace Hyqo\Router\Test\Service;
 
 use Hyqo\Container\Container;
 use Hyqo\Router\Exception\NotCallableException;
-use Hyqo\Router\Pipeline;
 use Hyqo\Router\Service\CallableService;
 use PHPUnit\Framework\TestCase;
 
 class CallableServiceTest extends TestCase
 {
-    protected static $service;
+    protected static object $service;
 
     public static function setUpBeforeClass(): void
     {
@@ -18,14 +17,14 @@ class CallableServiceTest extends TestCase
         self::$service = $container->get(CallableService::class);
     }
 
-    public function test_make_callable()
+    public function test_make_callable(): void
     {
-        self::$service->makeCallable(function () {
+        self::$service->makeCallable(static function () {
         });
 
         self::$service->makeCallable(
             new class () {
-                public function __invoke()
+                public function __invoke(): void
                 {
                 }
             }
@@ -34,7 +33,7 @@ class CallableServiceTest extends TestCase
         self::$service->makeCallable(
             [
                 new class () {
-                    public function foo()
+                    public function foo(): void
                     {
                     }
                 },
@@ -50,6 +49,24 @@ class CallableServiceTest extends TestCase
 
         self::$service->makeCallable('foo');
         self::$service->makeCallable(Bar::class);
+        self::$service->makeCallable([Bar::class, 'bar']);
+    }
+
+    /** @dataProvider provide_make_bad_callable_data */
+    public function test_make_bad_callable(mixed $controller): void
+    {
+        $this->expectException(NotCallableException::class);
+
+        self::$service->makeCallable($controller);
+    }
+
+    public function provide_make_bad_callable_data(): \Generator
+    {
+        yield ['foo'];
+        yield [Bar::class];
+        yield [[Bar::class]];
+        yield [[Bar::class, 'bar']];
+        yield [['FooBarClass', 'bar']];
     }
 }
 

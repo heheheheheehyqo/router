@@ -2,7 +2,7 @@
 
 namespace Hyqo\Router\Exception;
 
-class NotCallableException extends \RuntimeException
+class NotCallableException extends RouterException
 {
 
 }

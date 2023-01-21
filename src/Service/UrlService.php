@@ -8,7 +8,7 @@ use Hyqo\Router\Route\Token;
 
 class UrlService
 {
-    public function buildRouteUrl(Route $route, array $attributes = [])
+    public function buildRouteUrl(Route $route, array $attributes = []): array|string|null
     {
         $tokens = $route->getTokens();
 

@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 class UrlServiceTest extends TestCase
 {
 
-    protected static $service;
+    protected static object $service;
 
     public static function setUpBeforeClass(): void
     {
@@ -21,9 +21,9 @@ class UrlServiceTest extends TestCase
     }
 
     /**
-     * @dataProvider provideData
+     * @dataProvider provide_build_url_data
      */
-    public function test_build_url($name, $path, $tokens, $attributes, $expected)
+    public function test_build_url($name, $path, $tokens, $attributes, $expected): void
     {
         $route = new Route($name, '', $path, $tokens, [], [], []);
 
@@ -32,7 +32,7 @@ class UrlServiceTest extends TestCase
         $this->assertEquals($url, $expected);
     }
 
-    public function provideData(): \Generator
+    public function provide_build_url_data(): \Generator
     {
         yield [
             'r1',
@@ -75,12 +75,26 @@ class UrlServiceTest extends TestCase
             ],
             '/foo'
         ];
+
+        yield [
+            'r4',
+            '/{module}-{action}',
+            [
+                'module' => new Token('module', '.*'),
+                'action' => (new Token('action', '\d*'))->setOptional(123),
+            ],
+            [
+                'module' => 'foo',
+                'action' => 1234,
+            ],
+            '/foo-1234'
+        ];
     }
 
     /**
-     * @dataProvider provideInvalidData
+     * @dataProvider provide_build_url_exception_data
      */
-    public function test_build_url_exception($name, $path, $tokens, $attributes)
+    public function test_build_url_exception($name, $path, $tokens, $attributes): void
     {
         $route = new Route($name, '', $path, $tokens, [], [], []);
 
@@ -88,7 +102,7 @@ class UrlServiceTest extends TestCase
         self::$service->buildRouteUrl($route, $attributes);
     }
 
-    public function provideInvalidData(): \Generator
+    public function provide_build_url_exception_data(): \Generator
     {
         yield [
             'r1',

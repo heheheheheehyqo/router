@@ -2,50 +2,50 @@
 
 namespace Hyqo\Router\Interceptor;
 
-use Hyqo\Http\Header;
 use Hyqo\Http\HttpCode;
 use Hyqo\Http\Request;
 use Hyqo\Http\Response;
+use Hyqo\Router\Exception\RedirectException;
 use Hyqo\Router\Router;
-use Hyqo\Router\Service\CallableService;
 use Hyqo\Router\Service\UrlService;
+use JetBrains\PhpStorm\ExpectedValues;
 
 class RedirectInterceptor extends BaseInterceptor
 {
-    /** @var HttpCode */
-    protected $httpCode;
+    protected HttpCode $httpCode;
 
-    /**
-     * @var string
-     */
-    protected $location;
+    protected ?string $location = null;
 
-    public function setHttpCode(?HttpCode $httpCode): self
-    {
+    public function setHttpCode(
+        #[ExpectedValues(values: [HttpCode::MOVED_PERMANENTLY, HttpCode::FOUND])] ?HttpCode $httpCode
+    ): self {
         $this->httpCode = $httpCode;
 
         return $this;
     }
 
-    protected function getHttCode(): HttpCode
+    protected function getHttpCode(): HttpCode
     {
-        return $this->httpCode ?? HttpCode::FOUND();
+        return $this->httpCode ?? HttpCode::FOUND;
     }
 
-    public function setLocation(string $location): self
+    public function toLocation(string $location): self
     {
         $this->location = $location;
 
         return $this;
     }
 
+    /**
+     * @return callable(Router, Request, UrlService): Response
+     */
     public function getHandler(): callable
     {
         return function (
             Router $router,
             Request $request,
             UrlService $urlService
-        ) {
+        ): Response {
             if (null !== $this->resolvable) {
                 return $this->handleResolvable($router, $request, $urlService);
             }
@@ -54,7 +54,7 @@ class RedirectInterceptor extends BaseInterceptor
                 return $this->handleLocation();
             }
 
-            throw new \RuntimeException('Redirect should point to something');
+            throw new RedirectException('Redirect should point to something');
         };
     }
 
@@ -65,11 +65,11 @@ class RedirectInterceptor extends BaseInterceptor
 
         $location = $urlService->buildRouteUrl($route, $attributes);
 
-        return (new Response($this->getHttCode()))->setHeader(Header::LOCATION, $location);
+        return (new Response($this->getHttpCode()))->setHeader('Location', $location);
     }
 
     protected function handleLocation(): Response
     {
-        return (new Response($this->getHttCode()))->setHeader(Header::LOCATION, $this->location);
+        return (new Response($this->getHttpCode()))->setHeader('Location', $this->location);
     }
 }

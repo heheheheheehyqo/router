@@ -8,22 +8,30 @@ use Hyqo\Router\Exception\NotCallableException;
 /** @internal */
 class CallableService
 {
-    /**
-     * @var Container
-     */
-    private $container;
-
-    public function __construct(Container $container)
+    public function __construct(protected Container $container)
     {
-        $this->container = $container;
     }
 
-    /**
-     * @param \Closure|string[]|string $controller
-     * @return callable
-     */
-    public function makeCallable($controller): callable
+    public function makeCallable(string|array|callable $controller): callable
     {
+        if (is_string($class = $controller)) {
+            if (class_exists($class)) {
+                $object = $this->container->make($class);
+
+                if (is_callable($object)) {
+                    return [$object, '__invoke'];
+                }
+
+                throw new NotCallableException(
+                    sprintf('The class %s must have __invoke method', $class)
+                );
+            }
+
+            throw new NotCallableException(
+                sprintf('The class %s does not exist', $class)
+            );
+        }
+
         if (is_array($controller)) {
             if (count($controller) === 2) {
                 [$class, $action] = $controller;
@@ -54,31 +62,7 @@ class CallableService
             );
         }
 
-        if (is_string($class = $controller)) {
-            if (class_exists($class)) {
-                $object = $this->container->make($class);
-
-                if (is_callable($object)) {
-                    return [$object, '__invoke'];
-                }
-
-                throw new NotCallableException(
-                    sprintf('The class %s must have __invoke method', $class)
-                );
-            }
-
-            throw new NotCallableException(
-                sprintf('The class %s does not exist', $class)
-            );
-        }
-
-        if (is_callable($controller)) {
-            return $controller;
-        }
-
-        throw new NotCallableException(
-            'The controller must be callable'
-        );
+        return $controller;
     }
 
     /**

@@ -3,73 +3,54 @@
 namespace Hyqo\Router;
 
 use Hyqo\Container\Container;
-use Hyqo\Http\Header;
 use Hyqo\Http\HttpCode;
 use Hyqo\Http\Request;
 use Hyqo\Http\Response;
 use Hyqo\Router\Exception\NotFoundException;
+use Hyqo\Router\Exception\UndefinedRouteException;
 use Hyqo\Router\Mapper\Mapper;
 use Hyqo\Router\Route\Route;
 use Hyqo\Router\Service\CallableService;
 
 class Router
 {
-    /**
-     * @var Container
-     */
-    private $container;
+    protected CallableService $callableService;
 
-    /**
-     * @var CallableService
-     */
-    private $callableService;
+    protected ?Mapper $mapper = null;
 
-    protected $routerConfiguration;
-
-    /**
-     * @var Mapper
-     */
-    protected $mapper;
-
-    public function __construct(Container $container, RouterConfiguration $routerConfiguration)
-    {
-        $this->container = $container;
-        $this->routerConfiguration = $routerConfiguration;
-
+    public function __construct(
+        protected Container $container,
+        protected RouterConfiguration $routerConfiguration
+    ) {
         $this->callableService = $container->get(CallableService::class);
-    }
-
-    public function match(Request $request): ?Route
-    {
-        if ($route = $this->routerConfiguration->match($request)) {
-            foreach ($route->getAttributes() as $name => $value) {
-                $request->attributes->set($name, $value);
-            }
-        }
-
-        return $route;
     }
 
     public function handle(Request $request): Response
     {
-        $pathInfo = $request->getPathInfo();
+        $requestUri = $request->getRequestUri();
 
-        if ($pathInfo !== $sanitizedPathInfo = preg_replace(['#/{2,}#', '#(?<!^)/+$#'], ['/', ''], $pathInfo)) {
-            return (new Response(HttpCode::MOVED_PERMANENTLY()))
-                ->setHeader(Header::LOCATION, $sanitizedPathInfo);
+        if ($requestUri !== $sanitizedPathInfo = preg_replace([
+                '#/{2,}#',
+                '#(?<!^)/+(?=$)#',
+                '#(?<!^)/+(?=\?)#',
+            ], ['/', '', ''], $requestUri)) {
+            return (new Response(HttpCode::MOVED_PERMANENTLY))
+                ->setHeader('Location', $sanitizedPathInfo);
         }
 
         try {
-            if ($route = $this->match($request)) {
+            if ($route = ($this->routerConfiguration)($request)) {
+                $request->attributes->add($route->getAttributes());
+
                 $pipeline = $this->buildRoutePipeline($route);
 
-                return $pipeline($request) ?? new Response();
+                return wrap_to_response($pipeline($request));
             }
         } catch (NotFoundException $e) {
             if (null !== $fallback = $e->getController()) {
                 $pipeline = $this->buildPipeline($e->getMiddlewares(), $fallback);
 
-                return $pipeline($request) ?? new Response();
+                return wrap_to_response($pipeline($request));
             }
         }
 
@@ -86,10 +67,10 @@ class Router
             return $route;
         }
 
-        throw new \RuntimeException(sprintf('Cannot find route "%s"', $name));
+        throw new UndefinedRouteException(sprintf('Cannot find route "%s"', $name));
     }
 
-    public function buildPipeline(array $middlewares, $controller, $fallback = null): Pipeline
+    public function buildPipeline(array $middlewares, string|array|callable $controller, $fallback = null): Pipeline
     {
         $pipeline = new Pipeline($this->container, $this);
 

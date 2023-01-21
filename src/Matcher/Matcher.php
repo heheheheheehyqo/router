@@ -6,15 +6,11 @@ use Hyqo\Router\Route\Token;
 
 class Matcher
 {
-    protected $pattern;
-
-    /** @var Token[] */
-    protected $tokens;
-
-    public function __construct(string $pattern, array $tokens)
-    {
-        $this->pattern = $pattern;
-        $this->tokens = $tokens;
+    public function __construct(
+        protected string $pattern,
+        /** @var Token[] */
+        protected array $tokens,
+    ) {
     }
 
     public function full(string $string): ?MatchResult
@@ -30,7 +26,6 @@ class Matcher
     protected function doMatch(string $prefix, string $suffix, string $string): ?MatchResult
     {
         $pattern = "#$prefix$this->pattern$suffix#";
-//        echo "pattern: $pattern\n";
 
         $names = array_keys($this->tokens);
 
@@ -42,7 +37,6 @@ class Matcher
         );
 
         if (@preg_match($pattern, $string, $matches)) {
-//            echo "ok\n";
             foreach ($names as $name) {
                 if ($matches[$name] ?? null) {
                     $attributes[$name] = $matches[$name];
@@ -52,7 +46,6 @@ class Matcher
             return new MatchResult($matches[0], $this->tokens, $attributes, $matches);
         }
 
-//        echo "no\n";
         return null;
     }
 }

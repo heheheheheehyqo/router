@@ -4,67 +4,68 @@ namespace Hyqo\Router;
 
 use Hyqo\Http\Request;
 use Hyqo\Router\Exception\NotFoundException;
-use Hyqo\Router\Mapper\MappableInterface;
 use Hyqo\Router\Route\Route;
+use Traversable;
 
-class RouterConfiguration implements MappableInterface
+class RouterConfiguration implements MatchableInterface
 {
-    use Traits\FilterTrait;
-    use Traits\PrefixTrait;
-    use Traits\MiddlewareTrait;
+    use Matcher\MatcherTrait;
+    use Middleware\MiddlewareTrait;
 
-    /** @var RouteConfiguration|GroupConfiguration[] */
-    protected $routes = [];
+    protected ConfigurationCollection $configurations;
 
-    /** @var string|array|\Closure */
-    protected $fallback = null;
+    protected string|array|\Closure|null $fallback = null;
 
-    /**
-     * @param string $name
-     * @param string $path
-     * @param string|array|\Closure $controller
-     * @return RouteConfiguration
-     */
-    public function add(string $name, string $path, $controller = null): RouteConfiguration
+    public function __construct()
     {
-        return $this->routes[] = new RouteConfiguration($name, $path, $controller);
+        $this->configurations = new ConfigurationCollection();
+    }
+
+    public function add(string $name, string $path, string|array|\Closure|null $controller = null): RouteConfiguration
+    {
+        $routeConfiguration = new RouteConfiguration($name, $path, $controller);
+
+        $this->configurations->add($routeConfiguration);
+
+        return $routeConfiguration;
     }
 
     public function addGroup(?string $name = null): GroupConfiguration
     {
-        return $this->routes[] = new GroupConfiguration($name);
+        $groupConfiguration = new GroupConfiguration($name);
+
+        $this->configurations->add($groupConfiguration);
+
+        return $groupConfiguration;
     }
 
-    /**
-     * @param string|array|\Closure $controller
-     */
-    public function setFallback($controller): self
+    public function setFallback(string|array|\Closure $controller): static
     {
         $this->fallback = $controller;
 
         return $this;
     }
 
-    public function match(Request $request, string $base = ''): ?Route
+    public function __invoke(Request $request, string $base = ''): ?Route
     {
-        if (
-            !$this->isMethodMatch($request) ||
-            !$this->isHostMatch($request) ||
-            (null === $prefix = $this->matchPrefix($request, $base))
-        ) {
+        if (!$this->matchMethodAndHost($request)) {
+            return null;
+        }
+
+        if (null === $prefix = $this->matchPrefix($request, $base)) {
             return null;
         }
 
         [$base, $tokens, $attributes] = $prefix;
 
-        foreach ($this->routes as $configuration) {
-            if ($route = $configuration->match($request, $base)) {
+        foreach ($this->configurations as $configuration) {
+            if ($route = $configuration($request, $base)) {
                 return $route
-                    ->withPatternPrefix($this->prefix)
-                    ->withMiddlewares($this->getMiddlewares())
-                    ->withTokens($tokens)
-                    ->withAttributes($attributes)
-                    ->withFallback($this->fallback);
+                    ->addPatternPrefix($this->prefix)
+                    ->addMiddlewares($this->middlewares)
+                    ->addTokens($tokens)
+                    ->addAttributes($attributes)
+                    ->addFallback($this->fallback);
             }
         }
 
@@ -77,16 +78,18 @@ class RouterConfiguration implements MappableInterface
         return null;
     }
 
-    /** @inheritdoc */
-    public function mapGenerator(): \Generator
+    /**
+     * @return \Generator<string,Route>
+     */
+    public function getIterator(): \Generator
     {
         $tokens = $this->collectTokens($this->prefix);
 
-        foreach ($this->routes as $configuration) {
-            foreach ($configuration->mapGenerator() as $route) {
+        foreach ($this->configurations as $configuration) {
+            foreach ($configuration as $route) {
                 yield $route->getName() => $route
-                    ->withPatternPrefix($this->prefix)
-                    ->withTokens($tokens);
+                    ->addPatternPrefix($this->prefix)
+                    ->addTokens($tokens);
             }
         }
     }

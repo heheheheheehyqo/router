@@ -3,32 +3,25 @@
 namespace Hyqo\Router;
 
 use Hyqo\Http\Request;
-use Hyqo\Router\Mapper\MappableInterface;
 use Hyqo\Router\Route\Route;
 
-class GroupConfiguration implements MappableInterface
+class GroupConfiguration implements MatchableInterface
 {
-    use Traits\FilterTrait;
-    use Traits\PrefixTrait;
+    use Matcher\MatcherTrait;
 
-    /** @var ?string */
-    protected $name;
+    protected bool $configured = false;
 
-    /** @var bool */
-    protected $configured = false;
+    protected ?\Closure $configurator = null;
 
-    /** @var \Closure */
-    protected $configurator;
+    protected RouterConfiguration $routerConfiguration;
 
-    protected $routerConfiguration;
-
-    public function __construct(?string $name)
-    {
-        $this->name = $name;
+    public function __construct(
+        protected ?string $name = null,
+    ) {
         $this->routerConfiguration = new RouterConfiguration();
     }
 
-    public function setup(\Closure $configurator): self
+    public function setup(callable $configurator): static
     {
         $this->configurator = $configurator;
 
@@ -41,17 +34,27 @@ class GroupConfiguration implements MappableInterface
             return;
         }
 
-        ($this->configurator)($this->routerConfiguration);
+        if (null !== $this->configurator) {
+            ($this->configurator)($this->routerConfiguration);
+        }
+
         $this->configured = true;
     }
 
-    public function match(Request $request, string $base = ''): ?Route
+    public function setPrefix(string $prefix): self
     {
-        if (
-            !$this->isMethodMatch($request) ||
-            !$this->isHostMatch($request) ||
-            (null === $prefix = $this->matchPrefix($request, $base))
-        ) {
+        $this->prefix = $prefix;
+
+        return $this;
+    }
+
+    public function __invoke(Request $request, string $base = ''): ?Route
+    {
+        if (!$this->matchMethodAndHost($request)) {
+            return null;
+        }
+
+        if (null === $prefix = $this->matchPrefix($request, $base)) {
             return null;
         }
 
@@ -59,26 +62,28 @@ class GroupConfiguration implements MappableInterface
 
         $this->configure();
 
-        if ($route = $this->routerConfiguration->match($request, $base)) {
+        if ($route = ($this->routerConfiguration)($request, $base)) {
             return $route
-                ->withNamePrefix($this->name)
-                ->withTokens($tokens)
-                ->withAttributes($attributes)
-                ->withPatternPrefix($this->prefix);
+                ->addNamePrefix($this->name)
+                ->addTokens($tokens)
+                ->addAttributes($attributes)
+                ->addPatternPrefix($this->prefix);
         }
 
         return null;
     }
 
-    /** @inheritdoc */
-    public function mapGenerator(): \Generator
+    /**
+     * @return \Generator<string,Route>
+     */
+    public function getIterator(): \Generator
     {
         $this->configure();
 
-        foreach ($this->routerConfiguration->mapGenerator() as $route) {
+        foreach ($this->routerConfiguration as $route) {
             $route
-                ->withNamePrefix($this->name)
-                ->withPatternPrefix($this->prefix);
+                ->addNamePrefix($this->name)
+                ->addPatternPrefix($this->prefix);
 
             yield $route->getName() => $route;
         }

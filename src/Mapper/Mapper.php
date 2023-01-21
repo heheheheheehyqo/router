@@ -7,13 +7,14 @@ use Hyqo\Router\Route\Route;
 /** @internal */
 class Mapper
 {
-    protected $generator;
+    /** @return \IteratorAggregate<array-key,Route> */
+    protected \IteratorAggregate $generator;
 
-    protected $cache = [];
+    protected array $cache = [];
 
-    public function __construct(MappableInterface $mappable)
+    public function __construct(\IteratorAggregate $mappable)
     {
-        $this->generator = $mappable->mapGenerator();
+        $this->generator = $mappable;
     }
 
     public function getRoute(string $needed): ?Route
@@ -22,13 +23,8 @@ class Mapper
             return $this->cache[$needed];
         }
 
-        while ($this->generator->valid()) {
-            $name = $this->generator->key();
-            $routeConfiguration = $this->generator->current();
-
+        foreach ($this->generator as $name=>$routeConfiguration){
             $this->cache[$name] = $routeConfiguration;
-
-            $this->generator->next();
 
             if ($name === $needed) {
                 return $routeConfiguration;
